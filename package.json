@@ -7,7 +7,7 @@
     "dev": "nodemon index.js"
   },
   "author": "Harald Kirschner <npm@digitarald.com> (http://digitarald.de/)",
-  "license": "MIT",
+  "license": "MPL",
   "dependencies": {
     "aws-sdk": "^2.28.0",
     "body-parser": "^1.17.1",
