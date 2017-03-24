@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "description": "Personal Performance Beacon Server",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "author": "Harald Kirschner <npm@digitarald.com> (http://digitarald.de/)",
   "license": "MIT",
