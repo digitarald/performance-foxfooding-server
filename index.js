@@ -56,7 +56,7 @@ router.get('/:user', (req, res) => {
       return res.sendStatus(500);
     }
     const files = data.Contents.map(file => {
-      return {key: file.Key, time: file.LastModified, size: file.Size};
+      return {time: file.LastModified, size: file.Size};
     });
     res.json(files);
   });
