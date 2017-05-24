@@ -7,7 +7,7 @@ require('dotenv').config();
 const client = require('redis').createClient(process.env.REDIS_URL);
 
 const S3_BUCKET = process.env.S3_BUCKET;
-const XPI_FILE = 'https://raw.githubusercontent.com/digitarald/performance-foxfooding-ext/master/performance_foxfooding.xpi';
+const XPI_FILE = 'https://raw.githubusercontent.com/digitarald/performance-foxfooding/master/personal_performance_beacon.xpi';
 
 const app = express();
 app.use(bodyParser.json());
