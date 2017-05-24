@@ -1,23 +1,25 @@
 {
-  "name": "ppb-server",
+  "name": "performance-foxfooding-server",
   "version": "0.0.1",
-  "description": "Personal Performance Beacon Server",
+  "description": "Performance Foxfooding Server",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "test": "nodemon test/processor.js"
   },
   "author": "Harald Kirschner <npm@digitarald.com> (http://digitarald.de/)",
   "license": "MPL",
   "dependencies": {
-    "aws-sdk": "^2.28.0",
-    "body-parser": "^1.17.1",
+    "aws-sdk": "^2.56.0",
+    "body-parser": "^1.17.2",
     "dotenv": "^4.0.0",
-    "express": "^4.15.2",
-    "node-fetch": "^1.6.3",
+    "express": "^4.15.3",
+    "node-fetch": "^1.7.0",
     "redis": "^2.7.1",
+    "request": "^2.81.0",
     "shortid": "^2.2.8"
   },
-  "repository": "https://github.com/digitarald/ppb-server",
+  "repository": "https://github.com/digitarald/performance-foxfooding-server",
   "devDependencies": {
     "nodemon": "^1.11.0"
   }

@@ -2,10 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const aws = require('aws-sdk');
 const shortid = require('shortid');
+const request = require('request');
 require('dotenv').config();
 const client = require('redis').createClient(process.env.REDIS_URL);
 
 const S3_BUCKET = process.env.S3_BUCKET;
+const XPI_FILE = 'https://raw.githubusercontent.com/digitarald/performance-foxfooding-ext/master/performance_foxfooding.xpi';
 
 const app = express();
 app.use(bodyParser.json());
@@ -31,15 +33,23 @@ const aggregateBeacon = (user, file) => {
   // client.hget('aggregates', key, aggregate);
 };
 
-const router = express.Router();
+const base = express.Router();
 
-router.post('/', (req, res) => {
+base.get('/xpi', (req, res) => {
+  request(XPI_FILE).on('response', (res) => {
+    res.headers['content-type'] = 'application/x-xpinstall';
+  }).pipe(res);
+});
+
+const beacons = express.Router();
+
+beacons.post('/', (req, res) => {
   const user = shortid.generate();
   console.log('new userL %s', user);
   res.json({uid: user});
 });
 
-router.get('/:user', (req, res) => {
+beacons.get('/:user', (req, res) => {
   const user = req.params.user;
   console.log('%s: index', user);
   if (!user) {
@@ -62,7 +72,7 @@ router.get('/:user', (req, res) => {
   });
 });
 
-router.get('/:user/:file', (req, res) => {
+beacons.get('/:user/:file', (req, res) => {
   const {user, file} = req.params;
   if (!user || !file) {
     return res.sendStatus(500);
@@ -77,7 +87,7 @@ router.get('/:user/:file', (req, res) => {
   res.json({url: url});
 });
 
-router.post('/:user', (req, res) => {
+beacons.post('/:user', (req, res) => {
   const user = req.params.user;
   if (!user) {
     return res.sendStatus(500);
@@ -105,6 +115,7 @@ router.post('/:user', (req, res) => {
   });
 });
 
-app.use('/beacons', router);
+app.use('/', base);
+app.use('/beacons', beacons);
 
 app.listen(process.env.PORT || 3000);
