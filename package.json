@@ -8,7 +8,7 @@
     "test": "node test/analyze.js",
     "test:dev": "nodemon test/analyze.js",
     "build": "next build",
-    "heroku-postbuild": "next build",
+    "heroku-postbuild": "next build"
   },
   "author": "Harald Kirschner <npm@digitarald.com> (http://digitarald.de/)",
   "license": "MPL-2.0",
