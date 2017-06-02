@@ -3,8 +3,10 @@
   "version": "0.0.1",
   "description": "Performance Foxfooding Server",
   "scripts": {
-    "start": "nodemon --watch index.js --watch api --watch lib index.js",
-    "test": "nodemon test/analyze.js"
+    "start": "node index.js",
+    "dev": "nodemon --watch index.js --watch api --watch lib index.js",
+    "test": "node test/analyze.js",
+    "test:dev": "nodemon test/analyze.js"
   },
   "author": "Harald Kirschner <npm@digitarald.com> (http://digitarald.de/)",
   "license": "MPL-2.0",
