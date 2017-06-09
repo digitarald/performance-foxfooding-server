@@ -28,7 +28,7 @@ export default class extends React.Component {
     const { storage } = this.props;
     const { data } = this.state || {};
     // I want my Maps back
-    const mapped = parse(JSON.stringify(data || {}));
+    const { profiles, pending } = parse(JSON.stringify(data || {}));
     return (
       <div id="document">
         <Head>
@@ -39,14 +39,28 @@ export default class extends React.Component {
           <link rel="stylesheet" href="/static/index.css" />
         </Head>
         <header>
-          <h1>{storage.profiles} Recordings from {storage.users} Foxfooders ({storage.size})</h1>
+          <h1>
+            {storage.profiles}
+            {' '}
+            Recordings from
+            {' '}
+            {storage.users}
+            {' '}
+            Foxfooders (
+            {storage.size}
+            ,
+            {' '}
+            {pending}
+            {' '}
+            pending)
+          </h1>
           <dl>
             {Array.from(meta.entries()).map(([key, meta]) => {
               const reducer = reducers.get(meta.reducer || 'median');
               const $row = [<dt key={`${key}-dt`}>{meta.name}</dt>];
-              if (mapped.size) {
-                const reduced = reducer.reduce(key, meta)(mapped);
-                $row.push(<dd key={`${key}-dd`}>{reducer.print(reduced, meta)}</dd>);
+              if (profiles && profiles.size) {
+                const reduced = reducer.pretty(profiles, reduced, meta);
+                $row.push(<dd key={`${key}-dd`}>{reduced}</dd>);
               }
               return $row;
             })}

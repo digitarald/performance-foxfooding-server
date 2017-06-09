@@ -10,45 +10,58 @@ const { transform } = require('../lib/iterators/transform');
 const s3Defaults = { Bucket: process.env.S3_BUCKET };
 const cacheExpire = 600;
 
-// const waitFor = callback => {
-//   new Promise(resolve => {
-//     const next = () => {
-//       const result = callback();
-//       if (result !== false) {
-//         return resolve(result);
-//       }
-//       setTimeout(next, 50);
-//     };
-//     next();
-//   });
-// };
+const waitFor = callback => {
+  return new Promise(resolve => {
+    const next = () => {
+      const result = callback();
+      if (result !== false) {
+        return resolve(result);
+      }
+      setTimeout(next, 100);
+    };
+    next();
+  });
+};
+
+const mapProfilePending = new Set();
+const mapProfileActive = new Set();
 
 const mapProfile = async (results, redis, key) => {
   console.log(key, 'fetch');
+  mapProfilePending.add(key);
+  console.time(`${key} waiting`);
+  await waitFor(() => mapProfileActive.size < 5);
+  mapProfileActive.add(key);
+  console.timeEnd(`${key} waiting`);
   const profile = await fetchTransformedProfile(redis, key);
-  if (!profile) {
-    return;
+  if (profile) {
+    const mapped = metrics.mapAll(profile);
+    results.set(key, mapped);
+    await redis.hset('mapped', key, serializer.stringify(mapped));
   }
-  const mapped = metrics.mapAll(profile);
-  results.set(key, mapped);
-  await redis.hset('mapped', key, serializer.stringify(mapped));
+  mapProfilePending.delete(key);
+  mapProfileActive.delete(key);
 };
 
 const mapProfiles = async (redis, prefix = null) => {
   const list = await listProfiles(prefix);
   const cached = (await redis.hgetall('mapped')) || {};
-  const results = new Map(
+  const profiles = new Map(
     Object.entries(cached).filter(entry => !prefix || entry[0].startsWith(prefix)).map(entry => {
       entry[1] = serializer.parse(entry[1]);
       return entry;
     })
   );
+  let pending = 0;
   for (const { key } of list) {
-    if (!results.has(key)) {
-      await mapProfile(results, redis, key);
+    if (!profiles.has(key)) {
+      pending += 1;
+      if (!mapProfilePending.has(key)) {
+        mapProfile(profiles, redis, key);
+      }
     }
   }
-  return results;
+  return { profiles, pending };
 };
 
 const listProfiles = async (prefix = null) => {
@@ -109,14 +122,14 @@ router
     if (prefix && !prefix.split('/').every(shortid.isValid)) {
       return res.sendStatus(500);
     }
-    let profiles = null;
+    let results = null;
     try {
-      profiles = await mapProfiles(req.app.get('redis'), prefix);
+      results = await mapProfiles(req.app.get('redis'), prefix);
     } catch (err) {
       console.error(err);
       return res.sendStatus(500);
     }
-    res.json(profiles);
+    res.json(results);
   })
   .get('/storage', async (req, res) => {
     let files = [];
