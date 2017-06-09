@@ -40,6 +40,8 @@ export default class Index extends React.Component {
           <h1>
             {storage.profiles} Recordings from {storage.users} Foxfooders
           </h1>
+        </header>
+        <main>
           <aside>
             <em>{storage.size}, {report ? report.pending : '?'} queued for analysis</em>
           </aside>
@@ -54,8 +56,7 @@ export default class Index extends React.Component {
               return $row;
             })}
           </dl>
-        </header>
-        <main />
+        </main>
       </div>
     );
   }
