@@ -1,21 +1,25 @@
-const fs = require('fs');
+const { readFileSync } = require('fs');
+const { relative } = require('path');
 const { ungzip } = require('pako');
 const glob = require('glob');
 const { transform } = require('../lib/iterators/transform');
 const { printMarkers } = require('../lib/iterators/logs');
-const { applyMetrics } = require('../lib/metrics');
+const { mapAll, reduceAll } = require('../lib/metrics');
 
-const loadSample = sample => {
-  const binary = fs.readFileSync(sample, 'binary');
-  const json = JSON.parse(ungzip(binary, { to: 'string' }));
-  const transformed = transform(json);
-  return transformed;
+const loadSample = file => {
+  return transform(JSON.parse(ungzip(readFileSync(file, 'binary'), { to: 'string' })));
 };
 
-const analyze = () => {
-  const profiles = glob.sync(`${__dirname}/../samples/*/*`).map(loadSample);
+const samples = `${__dirname}/../samples`;
 
-  console.log(applyMetrics(profiles));
+const analyze = () => {
+  console.log('Mapping');
+  const results = glob.sync(`${samples}/*/*`).reduce((mapped, file) => {
+    return mapped.set(relative(samples, file), mapAll(loadSample(file)));
+  }, new Map());
+  console.log('Reducing');
+  const reduced = reduceAll(results);
+  console.log(reduced);
 };
 
 analyze();

@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const request = require('request');
 const { parse } = require('url');
 const next = require('next');
+const { replacer } = require('./lib/iterators/serializer');
 require('dotenv').config();
 
 const client = require('then-redis').createClient(process.env.REDIS_URL);
@@ -16,6 +17,7 @@ const report = require('./api/report');
 app.prepare().then(() => {
   const server = express();
   server.use(bodyParser.json());
+  server.set('json replacer', replacer);
   server.set('redis', client);
   server.set('collect', collect);
   server.set('report', report);
