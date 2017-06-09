@@ -6,9 +6,7 @@ import reducers from '../lib/reducers';
 import apiFetch from '../lib/api-fetch';
 import { parse } from '../lib/iterators/serializer';
 
-console.log(reducers);
-
-export default class extends React.Component {
+export default class Index extends React.Component {
   static async getInitialProps({ req }) {
     const storage = await apiFetch(req, '/storage');
     return { storage };
@@ -20,15 +18,15 @@ export default class extends React.Component {
 
   async componentDidMount() {
     console.log(this.props);
-    const data = await apiFetch(null, '/');
-    this.setState({ data });
+    const report = await apiFetch(null, '/');
+    this.setState({ report });
   }
 
   render() {
     const { storage } = this.props;
-    const { data } = this.state || {};
+    const { report } = this.state || {};
     // I want my Maps back
-    const { profiles, pending } = parse(JSON.stringify(data || {}));
+    const profiles = report ? parse(JSON.stringify(report.profiles)) : null;
     return (
       <div id="document">
         <Head>
@@ -40,26 +38,17 @@ export default class extends React.Component {
         </Head>
         <header>
           <h1>
-            {storage.profiles}
-            {' '}
-            Recordings from
-            {' '}
-            {storage.users}
-            {' '}
-            Foxfooders (
-            {storage.size}
-            ,
-            {' '}
-            {pending}
-            {' '}
-            pending)
+            {storage.profiles} Recordings from {storage.users} Foxfooders
           </h1>
+          <aside>
+            <em>{storage.size}, {report ? report.pending : '?'} queued for analysis</em>
+          </aside>
           <dl>
             {Array.from(meta.entries()).map(([key, meta]) => {
               const reducer = reducers.get(meta.reducer || 'median');
               const $row = [<dt key={`${key}-dt`}>{meta.name}</dt>];
-              if (profiles && profiles.size) {
-                const reduced = reducer.pretty(profiles, reduced, meta);
+              if (profiles) {
+                const reduced = reducer.pretty(profiles, key, meta);
                 $row.push(<dd key={`${key}-dd`}>{reduced}</dd>);
               }
               return $row;

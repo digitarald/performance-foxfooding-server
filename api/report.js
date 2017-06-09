@@ -26,7 +26,7 @@ const waitFor = callback => {
 const mapProfilePending = new Set();
 const mapProfileActive = new Set();
 
-const mapProfile = async (results, redis, key) => {
+const mapProfile = async (redis, key) => {
   console.log(key, 'fetch');
   mapProfilePending.add(key);
   console.time(`${key} waiting`);
@@ -36,11 +36,14 @@ const mapProfile = async (results, redis, key) => {
   const profile = await fetchTransformedProfile(redis, key);
   if (profile) {
     const mapped = metrics.mapAll(profile);
-    results.set(key, mapped);
     await redis.hset('mapped', key, serializer.stringify(mapped));
   }
   mapProfilePending.delete(key);
   mapProfileActive.delete(key);
+};
+
+const validateProfile = profile => {
+  return typeof profile.get('os') === 'string';
 };
 
 const mapProfiles = async (redis, prefix = null) => {
@@ -54,11 +57,16 @@ const mapProfiles = async (redis, prefix = null) => {
   );
   let pending = 0;
   for (const { key } of list) {
-    if (!profiles.has(key)) {
-      pending += 1;
-      if (!mapProfilePending.has(key)) {
-        mapProfile(profiles, redis, key);
+    if (profiles.has(key)) {
+      if (validateProfile(profiles.get(key))) {
+        continue;
+      } else {
+        profiles.delete(key);
       }
+    }
+    pending += 1;
+    if (!mapProfilePending.has(key)) {
+      mapProfile(redis, key);
     }
   }
   return { profiles, pending };
