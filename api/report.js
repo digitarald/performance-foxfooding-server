@@ -29,10 +29,9 @@ const mapProfileActive = new Set();
 const mapProfile = async (redis, key) => {
   console.log(key, 'fetch');
   mapProfilePending.add(key);
-  console.time(`${key} waiting`);
-  await waitFor(() => mapProfileActive.size < 5);
+  await waitFor(() => mapProfileActive.size < 2);
   mapProfileActive.add(key);
-  console.timeEnd(`${key} waiting`);
+  console.log(`${key} processing`, mapProfileActive.size);
   const profile = await fetchTransformedProfile(redis, key);
   if (profile) {
     const mapped = metrics.mapAll(profile);
@@ -40,6 +39,7 @@ const mapProfile = async (redis, key) => {
   }
   mapProfilePending.delete(key);
   mapProfileActive.delete(key);
+  console.log(`${key} done`);
 };
 
 const validateProfile = profile => {
