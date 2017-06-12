@@ -10,16 +10,17 @@ const { transform } = require('../lib/iterators/transform');
 const s3Defaults = { Bucket: process.env.S3_BUCKET };
 const cacheExpire = 600;
 
-const waitFor = callback => {
+const waitFor = (test, proceed) => {
   return new Promise(resolve => {
     const next = () => {
-      const result = callback();
-      if (result !== false) {
+      const result = test();
+      if (result) {
+        proceed(result);
         return resolve(result);
       }
-      setTimeout(next, 100);
+      setTimeout(next, 500);
     };
-    next();
+    process.nextTick(next);
   });
 };
 
@@ -27,11 +28,18 @@ const mapProfilePending = new Set();
 const mapProfileActive = new Set();
 
 const mapProfile = async (redis, key) => {
-  console.log(key, 'fetch');
+  console.time(`${key} queued`);
   mapProfilePending.add(key);
-  await waitFor(() => mapProfileActive.size < 2);
-  mapProfileActive.add(key);
-  console.log(`${key} processing`, mapProfileActive.size);
+  await waitFor(
+    () => {
+      return mapProfileActive.size < 4;
+    },
+    () => {
+      mapProfileActive.add(key);
+    }
+  );
+  console.timeEnd(`${key} queued`);
+  console.time(`${key} processing`);
   const profile = await fetchTransformedProfile(redis, key);
   if (profile) {
     const mapped = metrics.mapAll(profile);
@@ -39,7 +47,7 @@ const mapProfile = async (redis, key) => {
   }
   mapProfilePending.delete(key);
   mapProfileActive.delete(key);
-  console.log(`${key} done`);
+  console.timeEnd(`${key} processing`);
 };
 
 const validateProfile = profile => {
