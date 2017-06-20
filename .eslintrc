@@ -1,18 +1,38 @@
 {
+  "plugins": [
+    "react",
+    "prettier"
+  ],
     "rules": {
         "no-set-state": "off",
         "no-console": "off",
         "no-unused-vars": "off",
-        "no-case-declarations": "off"
+        "no-case-declarations": "off",
+          "prettier/prettier": [
+            "error",
+            {
+              "trailingComma": "es5",
+              "singleQuote": true
+            }
+          ]
     },
     "env": {
         "node": true,
-        "es6": true
+        "es6": true,
+        "browser": true
     },
     "parserOptions": {
-        "ecmaVersion": 2017
+        "ecmaVersion": 8,
+        "sourceType": "module",
+        "ecmaFeatures": {
+          "jsx": true,
+          "experimentalObjectRestSpread": true
+        }
     },
     "extends": [
-      "eslint:recommended"
+      "eslint:recommended",
+      "plugin:react/recommended",
+      "prettier",
+      "prettier/react"
     ]
 }

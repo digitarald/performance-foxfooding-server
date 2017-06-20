@@ -51,17 +51,22 @@ const mapProfile = async (redis, key) => {
 };
 
 const validateProfile = profile => {
-  return typeof profile.get('os') === 'string';
+  return (
+    typeof profile.get('os') === 'string' &&
+    typeof profile.get('date') === 'string'
+  );
 };
 
 const mapProfiles = async (redis, prefix = null) => {
   const list = await listProfiles(prefix);
   const cached = (await redis.hgetall('mapped')) || {};
   const profiles = new Map(
-    Object.entries(cached).filter(entry => !prefix || entry[0].startsWith(prefix)).map(entry => {
-      entry[1] = serializer.parse(entry[1]);
-      return entry;
-    })
+    Object.entries(cached)
+      .filter(entry => !prefix || entry[0].startsWith(prefix))
+      .map(entry => {
+        entry[1] = serializer.parse(entry[1]);
+        return entry;
+      })
   );
   let pending = 0;
   for (const { key } of list) {
@@ -170,33 +175,36 @@ router
   })
   .get('/metrics', (req, res) => {
     res.json(metrics.meta);
+  })
+  // .get('/transformed/:user/:file', async (req, res) => {
+  //   const { user, file } = req.params;
+  //   if (!shortid.isValid(user) || !shortid.isValid(file)) {
+  //     return res.sendStatus(500);
+  //   }
+  //   try {
+  //     const json = await fetchTransformedProfile(req.app.get('redis'), `${user}/${file}`);
+  //     return res.json(json);
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  //   res.sendStatus(500);
+  // })
+  .get('/view/:user/:file', (req, res) => {
+    const { user, file } = req.params;
+    if (!shortid.isValid(user) || !shortid.isValid(file)) {
+      return res.sendStatus(500);
+    }
+    const params = Object.assign(
+      {
+        Key: `${user}/${file}`,
+        Expires: 60,
+      },
+      s3Defaults
+    );
+    const s3 = new aws.S3();
+    const url = s3.getSignedUrl('getObject', params);
+    res.redirect(
+      302,
+      `https://perf-html.io/from-url/${encodeURIComponent(url)}`
+    );
   });
-// .get('/transformed/:user/:file', async (req, res) => {
-//   const { user, file } = req.params;
-//   if (!shortid.isValid(user) || !shortid.isValid(file)) {
-//     return res.sendStatus(500);
-//   }
-//   try {
-//     const json = await fetchTransformedProfile(req.app.get('redis'), `${user}/${file}`);
-//     return res.json(json);
-//   } catch (err) {
-//     console.error(err);
-//   }
-//   res.sendStatus(500);
-// })
-// .get('/view/:user/:file', (req, res) => {
-//   const { user, file } = req.params;
-//   if (!shortid.isValid(user) || !shortid.isValid(file)) {
-//     return res.sendStatus(500);
-//   }
-//   const params = Object.assign(
-//     {
-//       Key: `${user}/${file}`,
-//       Expires: 60,
-//     },
-//     s3Defaults
-//   );
-//   const s3 = new aws.S3();
-//   const url = s3.getSignedUrl('getObject', params);
-//   res.redirect(302, url);
-// })
