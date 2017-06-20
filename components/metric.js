@@ -32,7 +32,6 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
               .sort(profiles, id, meta)
               .slice(0, 10)
               .map(([id, profile]) => {
-                const external = `/api/report/view/${id}`; // rel="noreferrer nofollow"
                 const href = `/?profile=${id}`;
                 const pretty = prettyOne(profile);
                 return (
@@ -83,7 +82,7 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
                 font-style: normal;
               }
               .highlight {
-                background-color: yellow;
+                background-color: #FFED00;
               }
             `}</style>
           </ul>

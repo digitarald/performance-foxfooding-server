@@ -3,10 +3,11 @@ import Head from 'next/head';
 import NoSSR from 'react-no-ssr';
 import Link from 'next/link';
 import { meta } from '../lib/metrics';
-import apiFetch from '../lib/api-fetch';
-import Metric from '../components/metric';
 import reducers from '../lib/reducers';
 import { parse } from '../lib/iterators/serializer';
+import apiFetch from '../lib/api-fetch';
+import Metric from '../components/metric';
+import Profile from '../components/profile';
 
 export default class Index extends React.Component {
   static async getInitialProps({ req }) {
@@ -37,117 +38,63 @@ export default class Index extends React.Component {
     const { query } = url;
     const { report, profiles, highlight } = this.state;
     let $content = null;
+    let $dialog = null;
 
-    if (query.profile) {
+    if (query.profile && profiles) {
       const id = query.profile;
-      const profile = profiles && profiles.get(id);
-      $content = (
-        <div className="profile">
-          <Link href="/"><a>◀ Back</a></Link>
-          <h2>Firefox {profile.get('version')} on {profile.get('os')}</h2>
-          <ul>
-            {profile &&
-              Array.from(meta.entries()).map(([metric, metricMeta]) => {
-                const reducer = reducers.get(metricMeta.reducer);
-                if (!reducer.prettyOne) {
-                  return null;
-                }
-                const pretty = reducer.prettyOne(metric, metricMeta)(profile);
-                console.log(pretty[1]);
-                return (
-                  <li key={`metric-${metric}`}>
-                    {metricMeta.name}
-                    <div className="value">
-                      <em>{pretty[0]}</em> {pretty[1]}
-                    </div>
-                  </li>
-                );
-              })}
-          </ul>
+      const profile = profiles.get(id);
+      $dialog = <Profile profile={profile} id={id} meta={meta} />;
+    }
+    const groups = Array.from(
+      meta.entries()
+    ).reduce((groups, [metric, metricMeta]) => {
+      const bits = metric.split('-');
+      if (bits.length > 1) {
+        const group = bits[0];
+        if (!groups.has(group)) {
+          groups.set(group, new Map([[metric, metricMeta]]));
+        } else {
+          groups.get(group).set(metric, metricMeta);
+        }
+      }
+      return groups;
+    }, new Map());
+    $content = Array.from(groups).map(([group, groupMetrics]) => {
+      const $metrics = Array.from(
+        groupMetrics.entries()
+      ).map(([metric, metricMeta]) => {
+        const $metric = (
+          <Metric
+            key={`metric-${metric}`}
+            id={metric}
+            meta={metricMeta}
+            profiles={profiles}
+            highlight={highlight}
+            onMouseEnter={this.onMouseEnter.bind(this)}
+          />
+        );
+        return $metric;
+      });
+      return (
+        <section className="group" key={group}>
+          <h2>{group}</h2>
+          <div className="metrics">{$metrics}</div>
           <style jsx>{`
-            .profile {
-              margin: 1rem;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-            }
-            a {
-              text-decoration: none;
-              color: blue;
-              font-size: 1rem;
+            section {
             }
             h2 {
-              margin-bottom: 1rem;
+              text-transform: capitalize;
+              background-color: #555;
+              color: #fff;
+              text-align: center;
             }
-            ul {
-              list-style: none;
-            }
-            li {
-              display: flex;
-              justify-content: space-between;
-            }
-            .value {
-              margin-left: 2rem;
-            }
-            em {
-              font-style: normal;
-              font-size: 1.2rem;
-              font-weight: bold;
+            .metrics {
             }
           `}</style>
-        </div>
+        </section>
       );
-    } else {
-      const groups = Array.from(
-        meta.entries()
-      ).reduce((groups, [metric, metricMeta]) => {
-        const bits = metric.split('-');
-        if (bits.length > 1) {
-          const group = bits[0];
-          if (!groups.has(group)) {
-            groups.set(group, new Map([[metric, metricMeta]]));
-          } else {
-            groups.get(group).set(metric, metricMeta);
-          }
-        }
-        return groups;
-      }, new Map());
-      $content = Array.from(groups).map(([group, groupMetrics]) => {
-        const $metrics = Array.from(
-          groupMetrics.entries()
-        ).map(([metric, metricMeta]) => {
-          const $metric = (
-            <Metric
-              key={`metric-${metric}`}
-              id={metric}
-              meta={metricMeta}
-              profiles={profiles}
-              highlight={highlight}
-              onMouseEnter={this.onMouseEnter.bind(this)}
-            />
-          );
-          return $metric;
-        });
-        return (
-          <section className="group" key={group}>
-            <h2>{group}</h2>
-            <div className="metrics">{$metrics}</div>
-            <style jsx>{`
-              section {
-              }
-              h2 {
-                text-transform: capitalize;
-                background-color: #555;
-                color: #fff;
-                text-align: center;
-              }
-              .metrics {
-              }
-            `}</style>
-          </section>
-        );
-      });
-    }
+    });
+
     return (
       <div className="app">
         <Head>
@@ -156,6 +103,7 @@ export default class Index extends React.Component {
             href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700|Roboto:400,700"
           />
           <link rel="stylesheet" href="/static/index.css" />
+          <title>Performance Foxfooding</title>
         </Head>
         <header>
           <h1>
@@ -170,6 +118,7 @@ export default class Index extends React.Component {
         </header>
         <main>
           {$content}
+          {$dialog}
         </main>
         <style jsx>{`
           .app {
