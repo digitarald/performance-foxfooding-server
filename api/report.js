@@ -50,11 +50,15 @@ const mapProfile = async (redis, key) => {
   console.timeEnd(`${key} processing`);
 };
 
+console.log();
+
 const validateProfile = profile => {
-  return (
-    typeof profile.get('os') === 'string' &&
-    typeof profile.get('date') === 'string'
-  );
+  for (const [key, meta] of metrics.meta) {
+    if (!profile.has(key) && !meta.extra) {
+      return false;
+    }
+  }
+  return true;
 };
 
 const mapProfiles = async (redis, prefix = null) => {
@@ -67,19 +71,17 @@ const mapProfiles = async (redis, prefix = null) => {
         entry[1] = serializer.parse(entry[1]);
         return entry;
       })
+      .filter(entry => validateProfile(entry[1]))
   );
   let pending = 0;
   for (const { key } of list) {
     if (profiles.has(key)) {
-      if (validateProfile(profiles.get(key))) {
-        continue;
-      } else {
-        profiles.delete(key);
+      profiles.get(key).set('exists', true);
+    } else {
+      pending += 1;
+      if (!mapProfilePending.has(key)) {
+        mapProfile(redis, key);
       }
-    }
-    pending += 1;
-    if (!mapProfilePending.has(key)) {
-      mapProfile(redis, key);
     }
   }
   return { profiles, pending };
@@ -91,14 +93,19 @@ const listProfiles = async (prefix = null) => {
   if (prefix) {
     params.Prefix = prefix;
   }
-  let response = await s3.listObjectsV2(params).promise();
-  return response.Contents.map(file => {
-    return {
-      key: file.Key,
-      time: file.LastModified,
-      size: file.Size,
-    };
-  });
+  const contents = [];
+  do {
+    const response = await s3.listObjectsV2(params).promise();
+    response.Contents.forEach(file => {
+      contents.push({
+        key: file.Key,
+        time: file.LastModified,
+        size: file.Size,
+      });
+    });
+    params.ContinuationToken = response.NextContinuationToken;
+  } while (params.ContinuationToken);
+  return contents;
 };
 
 const fetchTransformedProfile = async (redis, key) => {
@@ -143,16 +150,16 @@ router
     if (prefix && !prefix.split('/').every(shortid.isValid)) {
       return res.sendStatus(500);
     }
-    let results = null;
+    let profiles = null;
     try {
-      results = await mapProfiles(req.app.get('redis'), prefix);
+      profiles = await mapProfiles(req.app.get('redis'), prefix);
     } catch (err) {
       console.error(err);
       return res.sendStatus(500);
     }
-    res.json(results);
+    res.json(profiles);
   })
-  .get('/storage', async (req, res) => {
+  .get('/stats', async (req, res) => {
     let files = [];
     try {
       files = await listProfiles();

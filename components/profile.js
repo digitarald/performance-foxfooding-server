@@ -6,6 +6,7 @@ import Router from 'next/router';
 const Profile = ({ profile, id, meta }) => {
   const external = `/api/report/view/${id}`; // rel="noreferrer nofollow"
   const close = () => Router.push('/');
+  const exists = profile.get('exists');
   return (
     <div className="modal">
       <div className="modal-overlay" onClick={close} />
@@ -13,7 +14,7 @@ const Profile = ({ profile, id, meta }) => {
         <div className="profile">
           <h2>Firefox {profile.get('version')} on {profile.get('os')}</h2>
           <ul>
-            {Array.from(meta.entries()).map(([metric, metricMeta]) => {
+            {[...meta].map(([metric, metricMeta]) => {
               const reducer = reducers.get(metricMeta.reducer);
               if (!reducer.prettyOne || profile.get(metric) == null) {
                 return null;
@@ -33,14 +34,16 @@ const Profile = ({ profile, id, meta }) => {
             className="privacy-notice"
             title="Personally identifiable information (PII) is any data that could potentially identify a specific individual. Any information that can be used to distinguish one person from another and can be used for de-anonymizing anonymous data can be considered PII."
           >
-            Analyze Responsibly! Profiles contain PII.
+            Analyze Responsibly! Be careful with sensitive information.
           </div>
           <ul className="menu">
             <li className="menu-item"><Link href="/"><a>Close</a></Link></li>
             <li className="menu-item">
-              <a href={external} rel="noopener noreferrer">
-                Open in perf.html
-              </a>
+              {exists
+                ? <a href={external} target="_blank" rel="noopener noreferrer">
+                    Open in perf.html
+                  </a>
+                : 'Expired'}
             </li>
           </ul>
         </div>
@@ -62,8 +65,7 @@ const Profile = ({ profile, id, meta }) => {
           top: 0;
           right: 0;
           bottom: 0;
-          opacity: 0.5;
-          background-color: #000;
+          background-color: rgba(100, 100, 100, 0.5);
           z-index: 1;
           cursor: pointer;
         }
@@ -87,10 +89,13 @@ const Profile = ({ profile, id, meta }) => {
           font-size: 1rem;
         }
         h2 {
+          font-size: 1.2rem;
           margin-bottom: 1rem;
           background-color: #000;
           color: #fff;
-          padding: 0 0.5rem;
+          font-weight: 300;
+          text-align: center;
+          padding: 0.5rem 0.5rem;
         }
         ul {
           list-style: none;
@@ -112,6 +117,7 @@ const Profile = ({ profile, id, meta }) => {
           background-color: #c33b32;
           color: #fff;
           padding: 0.5rem 0.5rem;
+          text-align: center;
         }
       `}</style>
     </div>

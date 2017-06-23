@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import cx from 'classnames';
 import reducers from '../lib/reducers';
 
 const prettyOS = long => {
@@ -23,6 +24,7 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
   let $topList = null;
   if (profiles) {
     const reduced = reducer.pretty(profiles, id, meta);
+    console.log(reduced);
     if (reducer.sort) {
       const prettyOne = reducer.prettyOne(id, meta);
       $topList = (
@@ -33,6 +35,7 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
               .slice(0, 10)
               .map(([id, profile]) => {
                 const href = `/?profile=${id}`;
+                const exists = profile.get('exists');
                 const pretty = prettyOne(profile);
                 return (
                   <li
@@ -43,7 +46,7 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
                   >
                     <div>
                       <Link href={href} target="_blank">
-                        <a>
+                        <a className={cx({ expired: !exists })}>
                           {profile.get('version')}/{prettyOS(profile.get('os'))}
                         </a>
                       </Link>{' '}
@@ -68,13 +71,15 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
               li {
                 display: flex;
                 justify-content: space-between;
-                max-width: 250px;
               }
               time {
                 color: #888;
               }
               .value {
                 align-self: flex-end;
+              }
+              .expired {
+                text-decoration: line-through;
               }
               em {
                 font-size: 1em;
@@ -91,34 +96,59 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
     }
     $reduced = reduced;
   }
+  const title = meta.name.match(/((?:[A-Z]\w+[\s,^])+)(.*)/) || [
+    '',
+    meta.name,
+    '',
+  ];
   return (
-    <div className="metric">
-      <h3 key={`${id}-dt`}>
-        {meta.name}
+    <div className={cx('metric')}>
+      <h3
+        key={`${id}-dt`}
+        className={cx({
+          bad: id.includes('-bad'),
+          moderate: id.includes('-moderate'),
+        })}
+      >
+        <em className="title-main">{title[1]}</em> {title[2]}
       </h3>
       {$reduced &&
         <div className="value" key="reduced">
-          <em>{$reduced[0]}</em> {$reduced[1]}
+          <em className="value-main">{$reduced[0]}</em> {$reduced[1]}
         </div>}
       {$topList}
       <style jsx>{`
         .metric {
           display: inline-flex;
+          flex: 1;
           min-width: 200px;
-          margin: 1rem 1.5rem;
+          margin: 0.5rem 0.75rem;
+          padding: 0.5rem 0.75rem;
           flex-direction: column;
+          background-color: #fff;
+          box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .moderate {
+          color: #f18a21;
+        }
+        .bad {
+          color: #c33b32;
         }
         h3 {
           color: #888;
-          font-weight: lighter;
+          font-weight: 300;
           font-size: 1rem;
+        }
+        .title-main {
+          font-weight: 700;
+          font-style: normal;
         }
         .value {
           margin-bottom: 0.2rem;
           display: block;
           color: #000;
         }
-        em {
+        .value-main {
           font-size: 1.4rem;
           font-style: normal;
           font-weight: 700;

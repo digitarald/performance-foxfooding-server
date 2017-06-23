@@ -7,7 +7,9 @@ const { printMarkers } = require('../lib/iterators/logs');
 const { mapAll, reduceAll } = require('../lib/metrics');
 
 const loadSample = file => {
-  return transform(JSON.parse(ungzip(readFileSync(file, 'binary'), { to: 'string' })));
+  return transform(
+    JSON.parse(ungzip(readFileSync(file, 'binary'), { to: 'string' }))
+  );
 };
 
 const samples = `${__dirname}/../samples`;

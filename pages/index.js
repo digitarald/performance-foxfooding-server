@@ -11,8 +11,8 @@ import Profile from '../components/profile';
 
 export default class Index extends React.Component {
   static async getInitialProps({ req }) {
-    const storage = await apiFetch(req, '/storage');
-    return { storage };
+    const stats = await apiFetch('/stats', {}, req);
+    return { stats };
   }
 
   constructor(props) {
@@ -23,7 +23,7 @@ export default class Index extends React.Component {
   }
 
   async componentDidMount() {
-    const report = await apiFetch(null, '/');
+    const report = await apiFetch('/');
     const profiles = parse(JSON.stringify(report.profiles));
     delete report.profiles;
     this.setState({ report, profiles });
@@ -34,7 +34,7 @@ export default class Index extends React.Component {
   }
 
   render() {
-    const { storage, url } = this.props;
+    const { stats, url } = this.props;
     const { query } = url;
     const { report, profiles, highlight } = this.state;
     let $content = null;
@@ -42,12 +42,11 @@ export default class Index extends React.Component {
 
     if (query.profile && profiles) {
       const id = query.profile;
+      console.log(Array);
       const profile = profiles.get(id);
       $dialog = <Profile profile={profile} id={id} meta={meta} />;
     }
-    const groups = Array.from(
-      meta.entries()
-    ).reduce((groups, [metric, metricMeta]) => {
+    const groups = [...meta].reduce((groups, [metric, metricMeta]) => {
       const bits = metric.split('-');
       if (bits.length > 1) {
         const group = bits[0];
@@ -84,11 +83,14 @@ export default class Index extends React.Component {
             }
             h2 {
               text-transform: capitalize;
-              background-color: #555;
-              color: #fff;
-              text-align: center;
+              color: #555;
+              margin: 0.75rem 0.75rem 0.25rem;
+              font-weight: 300;
+              font-size: 1.2rem;
             }
             .metrics {
+              display: flex;
+              flex-wrap: wrap;
             }
           `}</style>
         </section>
@@ -102,16 +104,15 @@ export default class Index extends React.Component {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700|Roboto:400,700"
           />
-          <link rel="stylesheet" href="/static/index.css" />
           <title>Performance Foxfooding</title>
         </Head>
         <header>
           <h1>
-            {storage.profiles} Recordings from {storage.users} Foxfooders
+            {stats.profiles} Recordings from {stats.users} Foxfooders
           </h1>
           <aside>
             <em>
-              {storage.size}, {report ? report.pending : '?'} queued for
+              {stats.size}, {report ? report.pending : '?'} queued for
               analysis
             </em>
           </aside>
@@ -120,20 +121,41 @@ export default class Index extends React.Component {
           {$content}
           {$dialog}
         </main>
+        <style jsx global>{`
+          * {
+            margin: 0;
+            padding: 0;
+            font-size: 1em;
+          }
+          html {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1em;
+          }
+          body {
+            line-height: 1.45;
+            color: #333;
+            background-color: #eee;
+          }
+          a, a:visited {
+            color: #005189;
+            text-decoration: underline;
+          }
+        `}</style>
         <style jsx>{`
           .app {
           }
           header {
-            background-color: #333;
-            color: #fff;
+            background-color: #ddd;
+            color: #333;
             display: flex;
             align-items: center;
             padding: 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
           }
           h1 {
             flex: 1;
-          }
-          main {
+            font-weight: 300;
+            font-size: 1.2rem;
           }
         `}</style>
       </div>
