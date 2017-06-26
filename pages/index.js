@@ -30,10 +30,7 @@ export default class Index extends React.Component {
   }
 
   onMouseEnter = id => {
-    clearTimeout(this.timeout);
-    this.timeout = setTimeout(() => {
-      this.setState({ highlight: id });
-    }, 100);
+    this.setState({ highlight: id });
   };
 
   render() {
