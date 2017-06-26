@@ -50,8 +50,6 @@ const mapProfile = async (redis, key) => {
   console.timeEnd(`${key} processing`);
 };
 
-console.log();
-
 const validateProfile = profile => {
   for (const [key, meta] of metrics.meta) {
     if (!profile.has(key) && !meta.extra) {

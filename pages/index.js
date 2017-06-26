@@ -6,7 +6,7 @@ import { meta } from '../lib/metrics';
 import reducers from '../lib/reducers';
 import { parse } from '../lib/iterators/serializer';
 import apiFetch from '../lib/api-fetch';
-import Metric from '../components/metric';
+import Metrics from '../components/metrics';
 import Profile from '../components/profile';
 
 export default class Index extends React.Component {
@@ -29,15 +29,18 @@ export default class Index extends React.Component {
     this.setState({ report, profiles });
   }
 
-  onMouseEnter(id) {
-    this.setState({ highlight: id });
-  }
+  onMouseEnter = id => {
+    clearTimeout(this.timeout);
+    this.timeout = setTimeout(() => {
+      this.setState({ highlight: id });
+    }, 100);
+  };
 
   render() {
     const { stats, url } = this.props;
     const { query } = url;
     const { report, profiles, highlight } = this.state;
-    let $content = null;
+    let $metrics = null;
     let $dialog = null;
 
     if (query.profile && profiles) {
@@ -46,56 +49,13 @@ export default class Index extends React.Component {
       const profile = profiles.get(id);
       $dialog = <Profile profile={profile} id={id} meta={meta} />;
     }
-    const groups = [...meta].reduce((groups, [metric, metricMeta]) => {
-      const bits = metric.split('-');
-      if (bits.length > 1) {
-        const group = bits[0];
-        if (!groups.has(group)) {
-          groups.set(group, new Map([[metric, metricMeta]]));
-        } else {
-          groups.get(group).set(metric, metricMeta);
-        }
-      }
-      return groups;
-    }, new Map());
-    $content = Array.from(groups).map(([group, groupMetrics]) => {
-      const $metrics = Array.from(
-        groupMetrics.entries()
-      ).map(([metric, metricMeta]) => {
-        const $metric = (
-          <Metric
-            key={`metric-${metric}`}
-            id={metric}
-            meta={metricMeta}
-            profiles={profiles}
-            highlight={highlight}
-            onMouseEnter={this.onMouseEnter.bind(this)}
-          />
-        );
-        return $metric;
-      });
-      return (
-        <section className="group" key={group}>
-          <h2>{group}</h2>
-          <div className="metrics">{$metrics}</div>
-          <style jsx>{`
-            section {
-            }
-            h2 {
-              text-transform: capitalize;
-              color: #555;
-              margin: 0.75rem 0.75rem 0.25rem;
-              font-weight: 300;
-              font-size: 1.2rem;
-            }
-            .metrics {
-              display: flex;
-              flex-wrap: wrap;
-            }
-          `}</style>
-        </section>
-      );
-    });
+    $metrics = (
+      <Metrics
+        onMouseEnter={this.onMouseEnter}
+        highlight={highlight}
+        profiles={profiles}
+      />
+    );
 
     return (
       <div className="app">
@@ -118,7 +78,7 @@ export default class Index extends React.Component {
           </aside>
         </header>
         <main>
-          {$content}
+          {$metrics}
           {$dialog}
         </main>
         <style jsx global>{`
@@ -142,15 +102,13 @@ export default class Index extends React.Component {
           }
         `}</style>
         <style jsx>{`
-          .app {
-          }
           header {
             background-color: #ddd;
             color: #333;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             display: flex;
             align-items: center;
             padding: 1rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
           }
           h1 {
             flex: 1;
