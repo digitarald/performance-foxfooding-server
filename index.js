@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('request');
 const { parse } = require('url');
+const compression = require('compression');
 const next = require('next');
 const { replacer } = require('./lib/iterators/serializer');
 require('dotenv').config();
@@ -27,6 +28,7 @@ app.prepare().then(() => {
     }
     return next();
   });
+  server.use(compression());
   server.use(bodyParser.json());
   server.set('json replacer', replacer);
   server.set('redis', client);
@@ -44,17 +46,21 @@ app.prepare().then(() => {
     }
   });
 
-  server.get('/xpi', (req, res) => {
-    request(process.env.XPI_URL)
-      .on('response', res => {
-        res.headers['content-type'] = 'application/x-xpinstall';
-      })
-      .on('error', function(err) {
-        console.error('Could not pipe XPI', err);
-        res.sendStatus(500);
-      })
-      .pipe(res);
-  });
+  server
+    .get('/robots.txt', (req, res) => {
+      res.sendFile('static/robots.txt', { root: __dirname });
+    })
+    .get('/xpi', (req, res) => {
+      request(process.env.XPI_URL)
+        .on('response', res => {
+          res.headers['content-type'] = 'application/x-xpinstall';
+        })
+        .on('error', function(err) {
+          console.error('Could not pipe XPI', err);
+          res.sendStatus(500);
+        })
+        .pipe(res);
+    });
   server.use('/api/collect', collect);
   server.use('/api/report', report);
   server.get('*', (req, res) => handle(req, res, parse(req.url, true)));

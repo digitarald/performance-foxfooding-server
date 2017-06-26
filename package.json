@@ -18,6 +18,7 @@
     "babel-preset-modern-browsers": "^9.0.2",
     "body-parser": "^1.17.2",
     "classnames": "^2.2.5",
+    "compression": "^1.6.2",
     "d3": "^4.9.1",
     "debug": "^2.6.8",
     "dotenv": "^4.0.0",
