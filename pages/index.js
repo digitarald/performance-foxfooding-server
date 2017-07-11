@@ -40,10 +40,9 @@ export default class Index extends React.Component {
     let $metrics = null;
     let $dialog = null;
 
-    if (query.profile && profiles) {
+    if (query.profile) {
       const id = query.profile;
-      console.log(Array);
-      const profile = profiles.get(id);
+      const profile = profiles && profiles.get(id);
       $dialog = <Profile profile={profile} id={id} meta={meta} />;
     }
     $metrics = (

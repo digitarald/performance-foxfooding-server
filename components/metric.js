@@ -48,6 +48,17 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
     }
     $reduced = reduced;
   }
+  if (!$topList) {
+    $topList = (
+      <div>
+        <style jsx>{`
+          div {
+            height: 10rem;
+          }
+        `}</style>
+      </div>
+    );
+  }
   const title = meta.name.match(/((?:[A-Z]\w+[\s,^])+)(.*)/) || [
     '',
     meta.name,
@@ -111,11 +122,11 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
 };
 
 Metric.propTypes = {
-  id: PropTypes.string,
+  id: PropTypes.string.isRequired,
   profiles: PropTypes.instanceOf(Map),
   highlight: PropTypes.string,
-  onMouseEnter: PropTypes.func,
-  meta: PropTypes.object,
+  onMouseEnter: PropTypes.func.isRequired,
+  meta: PropTypes.object.isRequired,
 };
 
 export default Metric;

@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import Link from 'next/link';
 import cx from 'classnames';
+import PropTypes from 'prop-types';
 import { meta } from '../lib/metrics';
 import Metric from '../components/metric';
 import reducers from '../lib/reducers';
@@ -60,5 +61,11 @@ class Metrics extends PureComponent {
     return <div>{$content}</div>;
   }
 }
+
+Metrics.propTypes = {
+  profiles: PropTypes.instanceOf(Map),
+  highlight: PropTypes.string,
+  onMouseEnter: PropTypes.func.isRequired,
+};
 
 export default Metrics;
