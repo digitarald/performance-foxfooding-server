@@ -72,7 +72,7 @@ app.prepare().then(() => {
 
   const strategy = new Auth0Strategy(
     {
-      callbackURL: '/report',
+      callbackURL: '/report/',
       domain: process.env.AUTH0_DOMAIN,
       clientID: process.env.AUTH0_CLIENT_ID,
       clientSecret: process.env.AUTH0_CLIENT_SECRET,
@@ -103,7 +103,7 @@ app.prepare().then(() => {
   server.use(passport.session());
 
   server.get(
-    '/report',
+    '/report/',
     passport.authenticate('auth0', { failureRedirect: '/report/error' }),
     (req, res) => {
       if (!req.user) {
@@ -121,7 +121,7 @@ app.prepare().then(() => {
 
   const ensureAuth = (req, res, next) => {
     if (!req.isAuthenticated()) {
-      return res.redirect('/report');
+      return res.redirect('/report/');
     }
     next();
   };
