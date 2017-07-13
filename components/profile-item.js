@@ -74,7 +74,7 @@ export default class ProfileItem extends PureComponent {
             font-style: normal;
           }
           .highlight {
-            background-color: #FFED00;
+            background-color: #ffed00;
           }
         `}</style>
       </li>

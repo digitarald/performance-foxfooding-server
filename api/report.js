@@ -126,7 +126,17 @@ const fetchTransformedProfile = async (redis, key) => {
     return null;
   }
   const binary = response.Body.toString('binary');
-  const data = JSON.parse(ungzip(binary, { to: 'string' }));
+  let data = null;
+  try {
+    data = JSON.parse(ungzip(binary, { to: 'string' }));
+  } catch (err) {
+    console.error('[report]', key, 'unparsable profile. Will be deleted.');
+    const deletion = await s3
+      .deleteObject(params)
+      .promise()
+      .catch(err => console.error('[report]', err));
+    return null;
+  }
   const transformed = transform(data);
   // await redis.set(key, JSON.stringify(transformed), 'EX', cacheExpire);
   return transformed;

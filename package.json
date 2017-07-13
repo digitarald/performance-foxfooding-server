@@ -13,7 +13,7 @@
   "author": "Harald Kirschner <npm@digitarald.com> (http://digitarald.de/)",
   "license": "MPL-2.0",
   "dependencies": {
-    "aws-sdk": "^2.82.0",
+    "aws-sdk": "^2.84.0",
     "babel-eslint": "^7.2.3",
     "babel-preset-modern-browsers": "^9.0.2",
     "body-parser": "^1.17.2",

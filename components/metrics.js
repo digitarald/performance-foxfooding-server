@@ -38,8 +38,12 @@ class Metrics extends PureComponent {
       });
       return (
         <section className="group" key={group}>
-          <h2>{group}</h2>
-          <div className="metrics">{$metrics}</div>
+          <h2>
+            {group}
+          </h2>
+          <div className="metrics">
+            {$metrics}
+          </div>
           <style jsx>{`
             section {
             }
@@ -58,7 +62,11 @@ class Metrics extends PureComponent {
         </section>
       );
     });
-    return <div>{$content}</div>;
+    return (
+      <div>
+        {$content}
+      </div>
+    );
   }
 }
 

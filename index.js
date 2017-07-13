@@ -23,7 +23,7 @@ const report = require('./api/report');
 
 app.prepare().then(() => {
   const server = express();
-  if (process.env.NODE_ENV === 'production') {
+  if (!dev) {
     server.use((req, res, next) => {
       // https://developer.mozilla.org/en-US/docs/Web/Security/HTTP_strict_transport_security
       res.header('Strict-Transport-Security', 'max-age=15768000');
@@ -36,23 +36,6 @@ app.prepare().then(() => {
     server.set('trust proxy', true);
     server.use(compression());
   }
-  server.use(bodyParser.json());
-
-  server.set('json replacer', replacer);
-  server.set('redis', client);
-  server.set('collect', collect);
-  server.set('report', report);
-
-  server.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-    } else {
-      next();
-    }
-  });
 
   server.get('/robots.txt', (req, res) => {
     res.sendFile('static/robots.txt', { root: __dirname });
@@ -68,6 +51,24 @@ app.prepare().then(() => {
       })
       .pipe(res);
   });
+
+  server.use(bodyParser.json());
+  server.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+
+  server.set('json replacer', replacer);
+  server.set('redis', client);
+  server.set('collect', collect);
+  server.set('report', report);
+
   server.use('/api/collect', collect);
 
   const strategy = new Auth0Strategy(
@@ -94,7 +95,7 @@ app.prepare().then(() => {
       cookie: {
         httpOnly: true,
         maxAge: 60000 * 60 * 24 * 7,
-        secure: process.env.NODE_ENV === 'production',
+        secure: !dev,
       },
       saveUninitialized: true,
     })
@@ -104,10 +105,21 @@ app.prepare().then(() => {
 
   server.get(
     '/report/',
-    passport.authenticate('auth0', { failureRedirect: '/report/error' }),
+    passport.authenticate('auth0', {
+      connection: 'google-oauth2',
+      failureRedirect: '/report/error',
+    }),
     (req, res) => {
+      const domains = (process.env.DOMAINS || 'mozilla.com').split(',');
       if (!req.user) {
         throw new Error('user null');
+      }
+      if (
+        !req.user.emails.some(({ value }) =>
+          domains.includes(value.split('@')[1])
+        )
+      ) {
+        throw new Error('domain mismatch');
       }
       res.redirect('/');
     }
@@ -120,7 +132,7 @@ app.prepare().then(() => {
   server.get('/report/error', (req, res) => res.sendStatus(403));
 
   const ensureAuth = (req, res, next) => {
-    if (!req.isAuthenticated()) {
+    if (!req.isAuthenticated() && !dev) {
       return res.redirect('/report/');
     }
     next();
