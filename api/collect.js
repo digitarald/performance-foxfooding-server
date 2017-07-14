@@ -25,7 +25,7 @@ module.exports = express
       ContentEncoding: 'gzip',
       ACL: 'authenticated-read',
       Metadata: {
-        user: user,
+        uploaded: new Date().toJSON(),
       },
     };
     const s3 = new aws.S3();

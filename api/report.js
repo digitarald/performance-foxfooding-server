@@ -2,13 +2,15 @@ const express = require('express');
 const shortid = require('shortid');
 const aws = require('aws-sdk');
 const { ungzip } = require('pako');
+const { gzipSync } = require('zlib');
 const pretty = require('prettysize');
 const metrics = require('../lib/metrics');
 const serializer = require('../lib/iterators/serializer');
-const { transform } = require('../lib/iterators/transform');
+const { transform, symbolicate } = require('../lib/iterators/transform');
 
 const s3Defaults = { Bucket: process.env.S3_BUCKET };
 const cacheExpire = 600;
+const queueMax = 5;
 
 const waitFor = (test, proceed) => {
   return new Promise(resolve => {
@@ -32,7 +34,7 @@ const mapProfile = async (redis, key) => {
   mapProfilePending.add(key);
   await waitFor(
     () => {
-      return mapProfileActive.size < 4;
+      return mapProfileActive.size < queueMax;
     },
     () => {
       mapProfileActive.add(key);
@@ -95,22 +97,73 @@ const listProfiles = async (prefix = null) => {
   do {
     const response = await s3.listObjectsV2(params).promise();
     response.Contents.forEach(file => {
-      contents.push({
-        key: file.Key,
-        time: file.LastModified,
-        size: file.Size,
-      });
+      if (!file.Key.includes('.')) {
+        contents.push({
+          key: file.Key,
+          size: file.Size,
+        });
+      }
     });
     params.ContinuationToken = response.NextContinuationToken;
   } while (params.ContinuationToken);
   return contents;
 };
 
+const symbolicateAndStoreProfile = async (key, profile, object) => {
+  const s3 = new aws.S3();
+  await symbolicate(profile);
+  try {
+    const copyKey = key + '.symbolicated';
+    const metadata = {
+      ContentType: 'application/json',
+      ContentEncoding: 'gzip',
+      ACL: 'authenticated-read',
+      Expires: object.Expires,
+      Metadata: {
+        symbolicated: profile.meta.symbolicated,
+        uploaded: object.Metadata.uploaded || object.LastModified.toJSON(),
+      },
+    };
+    await s3
+      .putObject(
+        Object.assign(
+          {
+            Key: copyKey,
+            Body: gzipSync(JSON.stringify(profile)),
+          },
+          metadata,
+          s3Defaults
+        )
+      )
+      .promise();
+    await s3
+      .copyObject(
+        Object.assign(
+          {
+            Key: key,
+            CopySource: `/${s3Defaults.Bucket}/${copyKey}`,
+          },
+          metadata,
+          s3Defaults
+        )
+      )
+      .promise();
+    await s3
+      .deleteObject(
+        Object.assign(
+          {
+            Key: copyKey,
+          },
+          s3Defaults
+        )
+      )
+      .promise();
+  } catch (err) {
+    console.error('[report]', 'Could not store symbolicated profile', err);
+  }
+};
+
 const fetchTransformedProfile = async (redis, key) => {
-  // const cached = await redis.get(key);
-  // if (cached) {
-  //   return JSON.parse(cached);
-  // }
   const s3 = new aws.S3();
   const params = Object.assign(
     {
@@ -118,27 +171,34 @@ const fetchTransformedProfile = async (redis, key) => {
     },
     s3Defaults
   );
-  const response = await s3
+  const object = await s3
     .getObject(params)
     .promise()
     .catch(err => console.error('[report]', err));
-  if (!response) {
+  if (!object) {
     return null;
   }
-  const binary = response.Body.toString('binary');
-  let data = null;
+  const binary = object.Body.toString('binary');
+  let profile = null;
   try {
-    data = JSON.parse(ungzip(binary, { to: 'string' }));
+    profile = JSON.parse(ungzip(binary, { to: 'string' }));
   } catch (err) {
-    console.error('[report]', key, 'unparsable profile. Will be deleted.');
+    console.error(
+      '[report]',
+      key,
+      'Corrupt profile, marked for deletion.',
+      err.message || err
+    );
     const deletion = await s3
       .deleteObject(params)
       .promise()
       .catch(err => console.error('[report]', err));
     return null;
   }
-  const transformed = transform(data);
-  // await redis.set(key, JSON.stringify(transformed), 'EX', cacheExpire);
+  if (!profile.meta.symbolicated) {
+    await symbolicateAndStoreProfile(key, profile, object);
+  }
+  const transformed = transform(profile);
   return transformed;
 };
 
@@ -204,20 +264,38 @@ router
   //   }
   //   res.sendStatus(500);
   // })
-  .get('/view/:user/:file', (req, res) => {
+  .get('/view/:user/:file', async (req, res) => {
     const { user, file } = req.params;
     if (!shortid.isValid(user) || !shortid.isValid(file)) {
       return res.sendStatus(500);
     }
+    const s3 = new aws.S3();
+    const key = `${user}/${file}`;
     const params = Object.assign(
       {
-        Key: `${user}/${file}`,
-        Expires: 60,
+        Key: key,
       },
       s3Defaults
     );
-    const s3 = new aws.S3();
-    const url = s3.getSignedUrl('getObject', params);
+    const response = await s3.headObject(params).promise();
+    if (response && !response.Metadata.symbolicated) {
+      // TODO: Generic loader, duplicates code from transform
+      const object = await s3.getObject(params).promise();
+      const profile = JSON.parse(
+        ungzip(object.Body.toString('binary'), { to: 'string' })
+      );
+      await symbolicateAndStoreProfile(key, profile, object);
+    }
+    const url = s3.getSignedUrl(
+      'getObject',
+      Object.assign(
+        {
+          Key: key,
+          Expires: 60,
+        },
+        s3Defaults
+      )
+    );
     res.redirect(
       302,
       `https://perf-html.io/from-url/${encodeURIComponent(url)}`

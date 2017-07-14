@@ -65,14 +65,13 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
     '',
   ];
   return (
-    <div className={cx('metric')}>
-      <h3
-        key={`${id}-dt`}
-        className={cx({
-          bad: id.includes('-bad'),
-          moderate: id.includes('-moderate'),
-        })}
-      >
+    <div
+      className={cx('metric', {
+        bad: id.includes('-bad'),
+        moderate: id.includes('-moderate'),
+      })}
+    >
+      <h3 key={`${id}-dt`} title={title[0]}>
         <em className="title-main">{title[1]}</em> {title[2]}
       </h3>
       {$reduced &&
@@ -84,23 +83,27 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
         .metric {
           display: inline-flex;
           flex: 1;
-          min-width: 200px;
+          min-width: 175px;
           margin: 0.5rem 0.75rem;
-          padding: 0.5rem 0.75rem;
+          padding: 0.25rem 0.75rem 0.5rem;
           flex-direction: column;
           background-color: #fff;
           box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        .moderate {
-          color: #f18a21;
-        }
-        .bad {
-          color: #c33b32;
+          border-top: 0.25rem solid #888;
         }
         h3 {
-          color: #888;
           font-weight: 300;
           font-size: 1rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
+        }
+        .moderate {
+          border-top-color: #f18a21;
+        }
+        .bad {
+          border-top-color: #c33b32;
         }
         .title-main {
           font-weight: 700;
