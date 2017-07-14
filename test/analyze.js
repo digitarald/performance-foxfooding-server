@@ -7,14 +7,14 @@ const { printMarkers } = require('../lib/iterators/logs');
 const { mapAll, reduceAll } = require('../lib/metrics');
 
 const loadSample = async file => {
-  const profile = await symbolicate(
-    JSON.parse(ungzip(readFileSync(file, 'binary'), { to: 'string' }))
+  const raw = JSON.parse(
+    ungzip(readFileSync(file, 'binary'), { to: 'string' })
   );
-  console.log(gzip(JSON.stringify(profile)));
+  const profile = await symbolicate(raw);
   return transform(profile);
 };
 
-const samples = `${__dirname}/../samples`;
+const samples = `${__dirname}/../samples-extra`;
 
 const analyze = async () => {
   console.log('Mapping');
