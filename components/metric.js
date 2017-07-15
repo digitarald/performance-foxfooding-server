@@ -16,7 +16,7 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
           <ul>
             {reducer
               .sort(profiles, id, meta)
-              .sort((a, b) => a[1].get('exists') > b[1].get('exists'))
+              .sort((a, b) => a[1].get('exists') < b[1].get('exists'))
               .slice(0, 20)
               .map(([profileId, profile]) => {
                 return (

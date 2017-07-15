@@ -44,7 +44,10 @@ export default class ProfileItem extends PureComponent {
         onMouseEnter={this.handleMouseEnter}
       >
         <div className="value">
-          <em>{pretty[0]}</em> {pretty[1]}
+          <em>
+            {pretty[0]}
+          </em>
+          {pretty[1]}
         </div>
         <div>
           <Link href={href} target="_blank">
