@@ -16,7 +16,8 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
           <ul>
             {reducer
               .sort(profiles, id, meta)
-              .slice(0, 10)
+              .sort((a, b) => a[1].get('exists') > b[1].get('exists'))
+              .slice(0, 20)
               .map(([profileId, profile]) => {
                 return (
                   <ProfileItem
@@ -40,6 +41,11 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
                 margin: 0;
                 padding: 0;
                 font-size: 0.8rem;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                max-height: 14rem;
+                overflow: auto;
               }
             `}</style>
           </ul>

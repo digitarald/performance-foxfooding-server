@@ -43,33 +43,40 @@ export default class ProfileItem extends PureComponent {
         className={highlighted ? 'highlight' : ''}
         onMouseEnter={this.handleMouseEnter}
       >
+        <div className="value">
+          <em>{pretty[0]}</em> {pretty[1]}
+        </div>
         <div>
           <Link href={href} target="_blank">
             <a className={cx({ expired: !exists })}>
               {profile.get('version')}/{prettyOS(profile.get('os'))}
+              {', '}
+              <time>{prettyDate(profile.get('date'))}</time>
             </a>
-          </Link>{' '}
-          <time>{prettyDate(profile.get('date'))}</time>
-        </div>
-        <div className="value">
-          <em>{pretty[0]}</em> {pretty[1]}
+          </Link>
         </div>
         <style jsx>{`
           li {
+            min-width: 7rem;
+            padding: 0 0.5rem;
             display: flex;
+            flex: 1;
             justify-content: space-between;
+          }
+          a {
+            color: inherit;
+            color: #888;
+            text-decoration: none;
           }
           time {
             color: #888;
-          }
-          .value {
-            align-self: flex-end;
           }
           .expired {
             text-decoration: line-through;
           }
           em {
-            font-size: 1em;
+            margin-right: 0.25rem;
+            font-size: 1.2em;
             font-weight: 700;
             font-style: normal;
           }
