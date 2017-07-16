@@ -40,35 +40,38 @@ export default class ProfileItem extends PureComponent {
     return (
       <li
         title={profileId}
-        className={highlighted ? 'highlight' : ''}
+        className={cx({
+          'highlight-soft': highlighted === 1,
+          highlight: highlighted === 2,
+        })}
         onMouseEnter={this.handleMouseEnter}
       >
-        <div className="value">
-          <em>
-            {pretty[0]}
-          </em>
-          {pretty[1]}
-        </div>
-        <div>
-          <Link href={href} target="_blank">
-            <a className={cx({ expired: !exists })}>
+        <Link href={href} target="_blank">
+          <a className={cx({ expired: !exists })}>
+            <div className="value">
+              <em>
+                {pretty[0]}
+              </em>
+              {pretty[1]}
+            </div>
+            <div>
               {profile.get('version')}/{prettyOS(profile.get('os'))}
               {', '}
               <time>{prettyDate(profile.get('date'))}</time>
-            </a>
-          </Link>
-        </div>
+            </div>
+          </a>
+        </Link>
         <style jsx>{`
           li {
             min-width: 7rem;
             padding: 0 0.5rem;
-            display: flex;
             flex: 1;
-            justify-content: space-between;
+            transition: background-color 0.15s ease-out;
           }
           a {
+            display: flex;
+            justify-content: space-between;
             color: inherit;
-            color: #888;
             text-decoration: none;
           }
           time {
@@ -83,6 +86,9 @@ export default class ProfileItem extends PureComponent {
             font-weight: 700;
             font-style: normal;
           }
+          .highlight-soft {
+            background-color: #f2f2f2;
+          }
           .highlight {
             background-color: #ffed00;
           }
@@ -96,7 +102,7 @@ ProfileItem.propTypes = {
   metricId: PropTypes.string,
   profileId: PropTypes.string,
   profile: PropTypes.instanceOf(Map).isRequired,
-  highlighted: PropTypes.bool,
+  highlighted: PropTypes.number,
   onMouseEnter: PropTypes.func,
   meta: PropTypes.object,
   reducer: PropTypes.object,

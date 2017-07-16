@@ -22,13 +22,19 @@ const Metric = ({ id, meta, profiles, onMouseEnter, highlight }) => {
               )
               .slice(0, 20)
               .map(([profileId, profile]) => {
+                const highlighted =
+                  +(highlight === profileId) +
+                  +(highlight && profileId.startsWith(highlight.substr(0, 8)));
+                if (highlighted) {
+                  console.log(highlighted);
+                }
                 return (
                   <ProfileItem
                     key={profileId}
                     metricId={id}
                     profileId={profileId}
                     profile={profile}
-                    highlighted={highlight === profileId}
+                    highlighted={highlighted}
                     meta={meta}
                     reducer={reducer}
                     onMouseEnter={onMouseEnter}
