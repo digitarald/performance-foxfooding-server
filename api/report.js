@@ -10,7 +10,7 @@ const { transform, symbolicate } = require('../lib/iterators/transform');
 
 const s3Defaults = { Bucket: process.env.S3_BUCKET };
 const cacheExpire = 600;
-const queueMax = 5;
+const queueMax = 2;
 
 const waitFor = (test, proceed) => {
   return new Promise(resolve => {
