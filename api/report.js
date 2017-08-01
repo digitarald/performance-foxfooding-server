@@ -1,8 +1,7 @@
 const express = require('express');
 const shortid = require('shortid');
 const aws = require('aws-sdk');
-const { ungzip } = require('pako');
-const { gzipSync } = require('zlib');
+const { gzip, ungzip } = require('pako');
 const pretty = require('prettysize');
 const metrics = require('../lib/metrics');
 const serializer = require('../lib/iterators/serializer');
@@ -11,7 +10,6 @@ const { transform, symbolicate } = require('../lib/iterators/transform');
 const s3Defaults = { Bucket: process.env.S3_BUCKET };
 const cacheExpire = 600;
 const queueMax = 2;
-const corrupted = new Set();
 
 const waitFor = (test, proceed) => {
   return new Promise(resolve => {
@@ -130,7 +128,7 @@ const symbolicateAndStoreProfile = async (key, profile, object) => {
         Object.assign(
           {
             Key: copyKey,
-            Body: gzipSync(JSON.stringify(profile)),
+            Body: Buffer.from(gzip(JSON.stringify(profile), { to: 'string' })),
           },
           metadata,
           s3Defaults
@@ -166,9 +164,6 @@ const symbolicateAndStoreProfile = async (key, profile, object) => {
 };
 
 const fetchTransformedProfile = async (redis, key) => {
-  if (corrupted.has(key)) {
-    return null;
-  }
   const s3 = new aws.S3();
   const params = Object.assign(
     {
@@ -191,14 +186,13 @@ const fetchTransformedProfile = async (redis, key) => {
     console.error(
       '[report]',
       key,
-      'Corrupt profile, not marked for deletion.',
+      'Corrupt profile, marked for deletion.',
       err.message || err
     );
-    corrupted.add(key);
-    // await s3
-    //   .deleteObject(params)
-    //   .promise()
-    //   .catch(err => console.error('[report]', err));
+    await s3
+      .deleteObject(params)
+      .promise()
+      .catch(err => console.error('[report]', err));
     return null;
   }
   if (!profile.meta.symbolicated) {
