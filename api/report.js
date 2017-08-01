@@ -128,7 +128,7 @@ const symbolicateAndStoreProfile = async (key, profile, object) => {
         Object.assign(
           {
             Key: copyKey,
-            Body: Buffer.from(gzip(JSON.stringify(profile), { to: 'string' })),
+            Body: Buffer.from(gzip(JSON.stringify(profile)).buffer),
           },
           metadata,
           s3Defaults
