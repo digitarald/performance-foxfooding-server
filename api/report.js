@@ -11,6 +11,7 @@ const { transform, symbolicate } = require('../lib/iterators/transform');
 const s3Defaults = { Bucket: process.env.S3_BUCKET };
 const cacheExpire = 600;
 const queueMax = 2;
+const corrupted = new Set();
 
 const waitFor = (test, proceed) => {
   return new Promise(resolve => {
@@ -158,12 +159,16 @@ const symbolicateAndStoreProfile = async (key, profile, object) => {
         )
       )
       .promise();
+    console.log('[report]', key, 'Symbolicated');
   } catch (err) {
-    console.error('[report]', 'Could not store symbolicated profile', err);
+    console.error('[report]', key, 'Could not store symbolicated profile', err);
   }
 };
 
 const fetchTransformedProfile = async (redis, key) => {
+  if (corrupted.has(key)) {
+    return null;
+  }
   const s3 = new aws.S3();
   const params = Object.assign(
     {
@@ -189,6 +194,7 @@ const fetchTransformedProfile = async (redis, key) => {
       'Corrupt profile, not marked for deletion.',
       err.message || err
     );
+    corrupted.add(key);
     // await s3
     //   .deleteObject(params)
     //   .promise()
