@@ -186,13 +186,13 @@ const fetchTransformedProfile = async (redis, key) => {
     console.error(
       '[report]',
       key,
-      'Corrupt profile, marked for deletion.',
+      'Corrupt profile, not marked for deletion.',
       err.message || err
     );
-    const deletion = await s3
-      .deleteObject(params)
-      .promise()
-      .catch(err => console.error('[report]', err));
+    // await s3
+    //   .deleteObject(params)
+    //   .promise()
+    //   .catch(err => console.error('[report]', err));
     return null;
   }
   if (!profile.meta.symbolicated) {
